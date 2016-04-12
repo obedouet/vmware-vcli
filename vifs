@@ -41,7 +41,7 @@ my @options = (
     ['rmdir'],
     ['rmdir', 'force'],
     ['rm'],
-    ['dir'],
+    ['dir', 'detail'],
     ['listds'],
     ['listds', 'dc'],
     ['listdc'],
@@ -52,6 +52,12 @@ my %opts = (
       alias => "f",
       type => "",
       help => qq! Allows overwriting of destination file for a copy or move.!,
+      required => 0,
+   },
+   'detail' => {
+      alias => "l",
+      type => "",
+      help => qq! Give more information when listing directory.!,
       required => 0,
    },
    'copy' => {
@@ -144,6 +150,7 @@ my $put = Opts::get_option('put');
 my $get = Opts::get_option('get');
 my $rm = Opts::get_option('rm');
 my $force = Opts::get_option('force') || 0;
+my $detail = Opts::get_option('detail');
 my $target = Opts::get_option('_default_');
 my $datacenter = Opts::get_option('dc') || $HADC;
 
@@ -180,7 +187,7 @@ if (defined($move)) {
 } elsif (defined($listdc)) {
    do_listdc();
 } elsif (defined($dir)) {
-   do_dir($dir);
+   do_dir($dir, $detail);
 } elsif (defined($put)) {
    do_put($put, $target);
 } elsif (defined($get)) {
@@ -401,7 +408,7 @@ sub print_dir {
 }
 
 sub do_dir {
-   my ($path) = @_;
+   my ($path, $list) = @_;
 
    # bug 379384
    if ($path =~ m@^\s*/tmp@) {
@@ -415,6 +422,7 @@ sub do_dir {
 
    my ($mode, $dc, $ds, $filepath) = VIExt::parse_remote_path($path);
 
+   if (!defined($list)) {
    my $resp = VIExt::http_get_file($mode, $filepath, $ds, $datacenter, undef);
    if ($resp && $resp->is_success) {
       # bug 410114
@@ -425,6 +433,50 @@ sub do_dir {
       # bug 463503
       VIExt::fail("Error: Can not list directory '$path'.");
    }
+
+   } else {
+
+   my ($owner,$size,$capa,$type);
+   my $host_view = Vim::find_entity_view(view_type => 'HostSystem');
+   my $ds_view = Vim::get_views(mo_ref_array => $host_view->datastore);
+   foreach(@$ds_view) {
+      if ($ds eq $_->info->name) {
+         my $browser = Vim::get_view (mo_ref => $_->browser);
+         #my $ds_path = "[" . $_->info->name . "]";
+         my $file_query = FileQueryFlags->new(fileOwner => 1, fileSize => 1,fileType => 1,modification => 1);
+         my $searchSpec = HostDatastoreBrowserSearchSpec->new(details => $file_query);
+         #my $search_res = $browser->SearchDatastoreSubFolders(datastorePath => "[$ds] $filepath",searchSpec => $searchSpec);
+         my $search_res = $browser->SearchDatastore(datastorePath => "[$ds] $filepath",searchSpec => $searchSpec);
+         #foreach my $result (@$search_res) {
+			#my $files = $result->file;
+			my $files = $search_res->file;
+			foreach my $file (@$files) {
+				$path = $file->path;
+				$owner = $file->owner;
+				$size = $file->fileSize;
+				#$size = &prettyPrintData($size,'B');
+				$type = ref($file);
+				if ($type eq "VmDiskFileInfo") {
+				   my $VmDiskFlags = VmDiskFileQueryFlags->new(capacityKb => 'true', diskType => 'true', thin => 'false', hardwareVersion => 'false');
+				   my $VmDiskQuery = VmDiskFileQuery->new(details => $VmDiskFlags);
+				   my $vm_file_query = FileQueryFlags->new(fileOwner => 0, fileSize => 1,fileType => 1,modification => 0);
+				   my $VmDiskSpec = HostDatastoreBrowserSearchSpec->new(query => [$VmDiskQuery], details => $vm_file_query);
+				   #my $VmDiskRes = $browser->SearchDatastoreSubFolders(datastorePath => "[$ds] $filepath", searchSpec => $VmDiskSpec);
+				   my $VmDiskRes = $browser->SearchDatastore(datastorePath => "[$ds] $filepath", searchSpec => $VmDiskSpec);
+				   my $VmDiskFiles = $VmDiskRes->file;
+				   foreach my $VmDisk (@$VmDiskFiles) {
+				      $capa = $VmDisk->capacityKb * 1024;
+				   }
+				   #$capa = $file->capacityKb;
+					if ($file->thin) { print "thin\n"; }
+				   print ("$path $owner $size/$capa $type\n");
+				} else { print ("$path $owner $size $type\n"); }
+			}
+		#}
+	}
+      }
+   }
+
 }
 
 sub do_listdc {
