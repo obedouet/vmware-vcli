@@ -33,9 +33,12 @@ Needed parms:
 * --datacenter <datacenter> : if VCenter
 
 Operations:
-* -c <size> <path> : create a vmdk with size format numberUNIT with unit eq g,m,k
+* -c <size> <path> [-d <format>] : create a vmdk with size format numberUNIT with unit eq g,m,k
 * -E <path> <path> : rename a VMDK OR move a VMDK (will keep thin provisionning)
+* -i <path> <path> [-d <format>] : clone a VMDK (will keep thin provisionning)
 * -U <path> : delete a VMDK
+
+Supportedd format for disk: zeroedthick|eagerzeroedthick|thin|rdm:dev|rdmp:dev|2gbsparse
 
 ## vmfolder
 
@@ -49,5 +52,18 @@ Needed parms:
 Operations:
 * --operation <create/delete>
 
+## vmregister
 
+Needed parms:
+* --url <url> : url to the ESX/VCenter like https://hostname/sdk/webService
+* --datacenter <datacenter> : if VCenter
+* --vmxpath <path> : path to vmx file
+
+Option:
+* --folder <folder> : folder name (for register)
+* --hostname <host> : host to register VM
+* --cluster <cluster> : cluster name (for register)
+
+Operations:
+* --operation <register/unregister>
 
