@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 #
-# Copyright (c) 2007 VMware, Inc.  All rights reserved.
+# By Olivier BEDOUET - 09/2016
+# Version 1.0
 
 use strict;
 use warnings;
