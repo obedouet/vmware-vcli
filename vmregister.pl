@@ -12,7 +12,7 @@ use lib "$FindBin::Bin/../";
 
 use VMware::VIRuntime;
 
-$Util::script_version = "1.0";
+$Util::script_version = "1.1";
 
 sub register;
 sub unregister;
