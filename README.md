@@ -1,14 +1,17 @@
 # vmware-vcli
 
-Modified scripts vmware SDK to support VCenter.
+Modified scripts from VMware SDK to support VCenter.
 
-You need to add datacenter name on each command.
+You need to add datacenter name on each command. If not known, use vifs with '-C' option.
 
 Use --help for more information.
 
 Concerning <path> format, can be:
 * '[datastore] directory/file' like '[iSCSI DS] my_vm/my_vm.vmx'
 * '/vmfs/volumes/iSCSI DS/my_vm/my_vm.vmx'
+
+Known issue:
+* don't work for some operation on ESXi free edition
 
 ## vifs
 
@@ -66,4 +69,15 @@ Option:
 
 Operations:
 * --operation <register/unregister>
+
+## vmclone
+
+Needed parms:
+* --url <url> : url to the ESX/VCenter like https://hostname/sdk/webService
+* --vmhost : host on which the new vm will be registered (even if you are running on cluster, this is the host which will proceed to the operation)
+* --vmname <src> / --vmname_destination <dst> : VM source/destination. If you want to keep the same name, you need to use folder
+
+Option:
+* --datastore <path> : on which datastore copy the new VM
+* --folder <folder name> : in which folder register the new VM
 
